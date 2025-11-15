@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="crowdfund.controller.CreateCampaignController">
+
+    <Label text="Create Campaign" style="-fx-font-size:22px;" />
+    <TextField fx:id="titleField" promptText="Title" />
+    <TextArea fx:id="descField" promptText="Description" />
+    <TextField fx:id="goalField" promptText="Goal Amount" />
+    <Button text="Create" onAction="#createCampaign" />
+
+</VBox>
