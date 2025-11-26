@@ -1,45 +1,111 @@
-package crowdfund.dao;
-
-import crowdfund.model.User;
-import crowdfund.util.DBUtil;
-
-import java.sql.*;
-
+// This class is likely a DAO (Data Access Object) responsible for interacting with the database
+// to manage user data.
 public class UserDAO {
 
+    // Authenticates a user based on email and password.
     public User login(String email, String password) {
-        try (Connection con = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM users WHERE email=? AND password=?";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, email);
-            ps.setString(2, password);
-            ResultSet rs = ps.executeQuery();
+        User user = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtil.getConnection();
+            String sql = "SELECT * FROM users WHERE email = ? AND password = ?"; //Consider using hashing for password
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, email);
+            pstmt.setString(2, password);
+            rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                return new User(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("email"),
-                        rs.getString("password"),
-                        rs.getString("role")
-                );
+                user = new User();
+                user.setId(rs.getInt("id"));
+                user.setName(rs.getString("name"));
+                user.setEmail(rs.getString("email"));
+                user.setPassword(rs.getString("password"));
+                user.setRole(rs.getString("role"));
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+        } catch (SQLException e) {
+            e.printStackTrace(); // Consider using a logging framework instead of printing stack trace
+        } finally {
+            //Ensure resources are closed in finally block
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace(); // Consider using a logging framework instead of printing stack trace
+            }
+        }
+        return user;
     }
 
-    public boolean register(User u) {
-        try (Connection con = DBUtil.getConnection()) {
-            String sql = "INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, u.getName());
-            ps.setString(2, u.getEmail());
-            ps.setString(3, u.getPassword());
-            ps.setString(4, u.getRole());
+    // Creates a new user account in the database.
+    public boolean register(User user) {
+        boolean success = false;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
 
-            return ps.executeUpdate() > 0;
+        try {
+            conn = DBUtil.getConnection();
+            String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)"; // Consider using hashing for password
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, user.getName());
+            pstmt.setString(2, user.getEmail());
+            pstmt.setString(3, user.getPassword());
+            pstmt.setString(4, user.getRole());
+            int rowsInserted = pstmt.executeUpdate();
+            if (rowsInserted > 0) {
+                success = true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // Consider using a logging framework instead of printing stack trace
+        } finally {
+            //Ensure resources are closed in finally block
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace(); // Consider using a logging framework instead of printing stack trace
+            }
+        }
+        return success;
+    }
 
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
+    // Retrieves a user's information based on their unique ID.
+    public User getUserById(int id) {
+        User user = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBUtil.getConnection();
+            String sql = "SELECT * FROM users WHERE id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, id);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                user = new User();
+                user.setId(rs.getInt("id"));
+                user.setName(rs.getString("name"));
+                user.setEmail(rs.getString("email"));
+                user.setPassword(rs.getString("password"));
+                user.setRole(rs.getString("role"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // Consider using a logging framework instead of printing stack trace
+        } finally {
+            //Ensure resources are closed in finally block
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace(); // Consider using a logging framework instead of printing stack trace
+            }
+        }
+        return user;
     }
 }
