@@ -1,0 +1,40 @@
+CrowdFundingSystem/
+│
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── crowdfund/
+│       │       ├── Main.java
+│       │       ├── module-info.java
+│       │
+│       │       ├── controller/
+│       │       │   ├── LoginController.java
+│       │       │   ├── RegisterController.java
+│       │       │   ├── DashboardController.java
+│       │       │   └── CreateCampaignController.java
+│       │
+│       │       ├── dao/
+│       │       │   ├── UserDAO.java
+│       │       │   └── CampaignDAO.java
+│       │
+│       │       ├── model/
+│       │       │   ├── User.java
+│       │       │   └── Campaign.java
+│       │
+│       │       └── util/
+│       │           └── DBUtil.java
+│       │
+│       └── resources/
+│           └── crowdfund/
+│               ├── fxml/
+│               │   ├── login.fxml
+│               │   ├── register.fxml
+│               │   ├── dashboard.fxml
+│               │   ├── create_campaign.fxml
+│               │   └── campaign_card.fxml
+│               │
+│               └── css/
+│                   └── style.css
+│
+└── sql/
+    └── crowdfund_schema.sql
