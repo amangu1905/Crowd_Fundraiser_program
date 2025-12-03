@@ -1,20 +1,43 @@
-CREATE DATABASE IF NOT EXISTS crowdfund_db;
-USE crowdfund_db;
+CREATE DATABASE IF NOT EXISTS crowdfunddb;
+USE crowdfunddb;
 
+-- USERS TABLE
 CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(100),
-    role VARCHAR(50)
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('ADMIN', 'CREATOR', 'CONTRIBUTOR') NOT NULL
 );
 
+-- CAMPAIGNS TABLE
 CREATE TABLE campaigns (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
     description TEXT,
-    goal_amount DOUBLE,
-    current_amount DOUBLE,
-    creator_id INT,
+    goal_amount DOUBLE NOT NULL,
+    current_amount DOUBLE NOT NULL DEFAULT 0,
+    creator_id INT NOT NULL,
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+
     FOREIGN KEY (creator_id) REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+-- CONTRIBUTIONS TABLE (UPDATED)
+CREATE TABLE contributions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    campaign_id INT NOT NULL,
+    user_id INT NOT NULL,
+    amount DOUBLE NOT NULL,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
