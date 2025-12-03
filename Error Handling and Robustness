@@ -1,0 +1,127 @@
+🛡️ Error Handling & Robustness (With Real Examples from Our Code)
+
+Our crowdfunding system is built with strong error-handling mechanisms to ensure that the application behaves reliably even under unexpected inputs,
+database failures, or runtime errors. Multiple techniques are used across the project, including validation, exception handling, safe DB operations, and atomic transactions.
+
+1. Robust Database Connection Handling
+Every DAO uses try-with-resources, ensuring:
+DB connections close automatically
+No memory leaks
+No unclosed statements or result sets
+Example from CampaignDAO.java:
+public List<Campaign> getAllCampaigns() {
+    List<Campaign> campaigns = new ArrayList<>();
+    String sql = "SELECT * FROM campaigns";
+
+    try (Connection con = DBConnect.getConnection();
+         PreparedStatement ps = con.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            campaigns.add(mapCampaign(rs));
+        }
+
+    } catch (SQLException e) {
+        System.err.println("Error fetching campaigns: " + e.getMessage());
+    }
+
+    return campaigns; // returns safe empty list on failure
+}
+
+2. Safe Transaction Management (Atomic Donation Processing)
+To ensure data consistency, donation processing uses:
+Manual transaction control
+Commit only when BOTH operations succeed
+Rollback if ANY step fails
+Example from ContributionDAO.java:
+public boolean processDonation(int campaignId, int userId, double amount) {
+    String donateSql = "INSERT INTO contributions(campaign_id, user_id, amount) VALUES (?, ?, ?)";
+    String updateSql = "UPDATE campaigns SET raised = raised + ? WHERE id = ?";
+
+    try (Connection con = DBConnect.getConnection()) {
+        con.setAutoCommit(false);
+
+        try (PreparedStatement ps1 = con.prepareStatement(donateSql);
+             PreparedStatement ps2 = con.prepareStatement(updateSql)) {
+
+            ps1.setInt(1, campaignId);
+            ps1.setInt(2, userId);
+            ps1.setDouble(3, amount);
+            ps1.executeUpdate();
+
+            ps2.setDouble(1, amount);
+            ps2.setInt(2, campaignId);
+            ps2.executeUpdate();
+
+            con.commit();
+            return true;
+
+        } catch (SQLException ex) {
+            con.rollback();
+            System.err.println("Transaction failed. Rolled back. Error: " + ex.getMessage());
+        }
+
+    } catch (SQLException e) {
+        System.err.println("Database error while processing donation: " + e.getMessage());
+    }
+
+    return false;
+}
+
+3. Input Validation & Defensive Programming
+Controllers perform essential input validation to ensure robustness against:
+Empty fields
+Non-numeric inputs
+Negative amounts
+Incomplete form submissions
+Example from CreateCampaignController.java:
+if (titleField.getText().trim().isEmpty() ||
+    goalField.getText().trim().isEmpty() ||
+    descriptionField.getText().trim().isEmpty()) {
+
+    System.out.println("Error: All fields must be filled!");
+    return;
+}
+
+try {
+    double goal = Double.parseDouble(goalField.getText());
+    if (goal <= 0) {
+        System.out.println("Goal amount must be greater than zero.");
+        return;
+    }
+} catch (NumberFormatException e) {
+    System.out.println("Invalid goal amount entered.");
+    return;
+}
+
+4. Null-Protection & Safe UI Updates
+In DashboardController.java, all UI labels are updated safely:
+int active = dao.getActiveCampaigns();
+activeCampaignsLabel.setText(String.valueOf(active));
+Even if dao.getActiveCampaigns() fails, DAO returns 0, preventing:
+UI crashes
+NullPointerExceptions
+Stuck UI components
+
+
+5. Schema Constraints Prevent Data Corruption
+Our MySQL schema enforces:
+NOT NULL on critical fields
+Foreign key constraints
+Cascading deletes
+Auto-increment primary keys
+Example:
+FOREIGN KEY (campaign_id)
+REFERENCES campaigns(id)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+
+
+6. Centralized Error Logging
+
+Errors are handled using:
+System.err.println("Error message...");
+This allows:
+Differentiation between normal output and errors
+Easy debugging
+Clear error tracing during development
