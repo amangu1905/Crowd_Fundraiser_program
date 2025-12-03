@@ -21,17 +21,13 @@ public class DashboardController {
         refreshCampaignList();
     }
 
-    private void refreshCampaignList() {
+    public void refreshCampaignList() {
         campaignList.getItems().clear();
         for (Campaign c : campaignDAO.getAllCampaigns()) {
-            // Show title and id so user can select; better UI would use custom cells with full object
             campaignList.getItems().add(c.getId() + " : " + c.getTitle() + " (Raised: " + c.getCurrentAmount() + ")");
         }
     }
 
-    /**
-     * Called by UI action to contribute to a selected campaign
-     */
     public void contribute() {
         String sel = campaignList.getSelectionModel().getSelectedItem();
         if (sel == null) {
@@ -40,12 +36,11 @@ public class DashboardController {
             return;
         }
 
-        // parse campaign id from string (we render as "id : title ...")
         int campaignId;
         try {
             campaignId = Integer.parseInt(sel.split(" : ")[0].trim());
         } catch (Exception ex) {
-            Alert a = new Alert(Alert.AlertType.ERROR, "Invalid campaign selection");
+            Alert a = new Alert(Alert.AlertType.ERROR, "Invalid campaign selected");
             a.showAndWait();
             return;
         }
@@ -64,19 +59,16 @@ public class DashboardController {
             return;
         }
 
-        // NOTE: in real app userId from session; using placeholder 1 for demo
+        // TODO: Replace with real logged-in user id from session handling
         int userId = 1;
 
         boolean ok = contributionService.contribute(campaignId, userId, amount);
 
         if (ok) {
-            Alert a = new Alert(Alert.AlertType.INFORMATION, "Contribution successful!");
-            a.showAndWait();
-            refreshCampaignList();
+            new Alert(Alert.AlertType.INFORMATION, "Contribution successful!").showAndWait();
         } else {
-            Alert a = new Alert(Alert.AlertType.ERROR, "Contribution failed (validation or DB error).");
-            a.showAndWait();
-            refreshCampaignList();
+            new Alert(Alert.AlertType.ERROR, "Contribution failed (validation or DB error).").showAndWait();
         }
+        refreshCampaignList();
     }
 }
