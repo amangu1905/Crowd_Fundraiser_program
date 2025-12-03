@@ -4,66 +4,55 @@ import crowdfund.model.Campaign;
 import crowdfund.util.DBUtil;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
+/**
+ * CampaignDAO: DB operations for campaigns.
+ * - getCampaignById: read-only
+ * - updateCurrentAmount: update using provided Connection (for transactional updates)
+ */
 public class CampaignDAO {
 
-    public boolean createCampaign(Campaign c) {
-        try (Connection con = DBUtil.getConnection()) {
-            String sql = "INSERT INTO campaigns(title,description,goal_amount,current_amount,creator_id) VALUES(?,?,?,?,?)";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, c.getTitle());
-            ps.setString(2, c.getDescription());
-            ps.setDouble(3, c.getGoalAmount());
-            ps.setDouble(4, c.getCurrentAmount());
-            ps.setInt(5, c.getCreatorId());
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
-    }
+    private static final String SELECT_BY_ID = "SELECT * FROM campaigns WHERE id = ?";
+    private static final String UPDATE_AMOUNT_SQL = "UPDATE campaigns SET current_amount = current_amount + ? WHERE id = ?";
 
-    public List<Campaign> getAllCampaigns() {
-        List<Campaign> list = new ArrayList<>();
-        try (Connection con = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM campaigns";
-            Statement st = con.createStatement();
-            ResultSet rs = st.executeQuery(sql);
+    public Campaign getCampaignById(int campaignId) {
+        try (Connection con = DBUtil.getConnection();
+             PreparedStatement ps = con.prepareStatement(SELECT_BY_ID)) {
 
-            while (rs.next()) {
-                list.add(new Campaign(
-                    rs.getInt("id"),
-                    rs.getString("title"),
-                    rs.getString("description"),
-                    rs.getDouble("goal_amount"),
-                    rs.getDouble("current_amount"),
-                    rs.getInt("creator_id")
-                ));
+            ps.setInt(1, campaignId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Campaign(
+                            rs.getInt("id"),
+                            rs.getString("title"),
+                            rs.getString("description"),
+                            rs.getDouble("goal_amount"),
+                            rs.getDouble("current_amount"),
+                            rs.getInt("creator_id")
+                    );
+                }
             }
-        } catch (Exception e) { e.printStackTrace(); }
-        return list;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
-     * New: fetch campaign by id (used by service layer for validation/calculation)
+     * Update a campaign's current_amount using the supplied connection.
+     * NOTE: This method does NOT commit/rollback the connection; caller should manage transaction.
+     *
+     * @param conn       active JDBC connection
+     * @param campaignId id of campaign
+     * @param amount     amount to add (can be negative if needed)
+     * @return number of rows updated
+     * @throws SQLException on SQL error
      */
-    public Campaign getCampaignById(int campaignId) {
-        try (Connection con = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM campaigns WHERE id = ?";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1, campaignId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return new Campaign(
-                    rs.getInt("id"),
-                    rs.getString("title"),
-                    rs.getString("description"),
-                    rs.getDouble("goal_amount"),
-                    rs.getDouble("current_amount"),
-                    rs.getInt("creator_id")
-                );
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
+    public int updateCurrentAmount(Connection conn, int campaignId, double amount) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(UPDATE_AMOUNT_SQL)) {
+            ps.setDouble(1, amount);
+            ps.setInt(2, campaignId);
+            return ps.executeUpdate();
+        }
     }
 }
