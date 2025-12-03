@@ -3,6 +3,8 @@ package crowdfund.controller;
 import crowdfund.dao.CampaignDAO;
 import crowdfund.model.Campaign;
 import crowdfund.service.ContributionService;
+import crowdfund.util.Session;
+import crowdfund.model.User;
 import javafx.fxml.FXML;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
@@ -31,8 +33,7 @@ public class DashboardController {
     public void contribute() {
         String sel = campaignList.getSelectionModel().getSelectedItem();
         if (sel == null) {
-            Alert a = new Alert(Alert.AlertType.WARNING, "Select a campaign first");
-            a.showAndWait();
+            new Alert(Alert.AlertType.WARNING, "Select a campaign first").showAndWait();
             return;
         }
 
@@ -40,8 +41,7 @@ public class DashboardController {
         try {
             campaignId = Integer.parseInt(sel.split(" : ")[0].trim());
         } catch (Exception ex) {
-            Alert a = new Alert(Alert.AlertType.ERROR, "Invalid campaign selected");
-            a.showAndWait();
+            new Alert(Alert.AlertType.ERROR, "Invalid selection").showAndWait();
             return;
         }
 
@@ -51,19 +51,19 @@ public class DashboardController {
         if (res.isEmpty()) return;
 
         double amount;
-        try {
-            amount = Double.parseDouble(res.get());
-        } catch (NumberFormatException e) {
-            Alert a = new Alert(Alert.AlertType.ERROR, "Invalid amount");
-            a.showAndWait();
+        try { amount = Double.parseDouble(res.get()); }
+        catch (NumberFormatException e) {
+            new Alert(Alert.AlertType.ERROR, "Invalid amount").showAndWait();
             return;
         }
 
-        // TODO: Replace with real logged-in user id from session handling
-        int userId = 1;
+        User current = Session.getInstance().getCurrentUser();
+        if (current == null) {
+            new Alert(Alert.AlertType.ERROR, "You must be logged in to contribute").showAndWait();
+            return;
+        }
 
-        boolean ok = contributionService.contribute(campaignId, userId, amount);
-
+        boolean ok = contributionService.contribute(campaignId, current.getId(), amount);
         if (ok) {
             new Alert(Alert.AlertType.INFORMATION, "Contribution successful!").showAndWait();
         } else {
