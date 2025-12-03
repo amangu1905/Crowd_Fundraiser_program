@@ -9,20 +9,27 @@ CrowdFundingSystem/
 │       │
 │       │       ├── controller/
 │       │       │   ├── LoginController.java
+│       │       │   ├── Contribution.java
 │       │       │   ├── RegisterController.java
 │       │       │   ├── DashboardController.java
 │       │       │   └── CreateCampaignController.java
 │       │
 │       │       ├── dao/
 │       │       │   ├── UserDAO.java
+│       │       │   ├── ContributionDAO.java
 │       │       │   └── CampaignDAO.java
 │       │
 │       │       ├── model/
 │       │       │   ├── User.java
-│       │       │   └── Campaign.java
+│       │       │   ├──Campaign.java
+│       │       │   └── Contribution.java
+│       │
+│       │       ├── service/
+│       │       │   ├── ContibutionService.java
 │       │
 │       │       └── util/
-│       │           └── DBUtil.java
+│       │       │   ├── DBUtil.java
+│       │       │   └── Session.java
 │       │
 │       └── resources/
 │           └── crowdfund/
@@ -37,4 +44,5 @@ CrowdFundingSystem/
 │                   └── style.css
 │
 └── sql/
+    ├── mysql-connector-j-9.4.0.jar
     └── crowdfund_schema.sql
