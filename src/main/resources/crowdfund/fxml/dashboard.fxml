@@ -1,12 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8.0.171"
+            xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="crowdfund.controller.DashboardController">
 
+    <!-- ======= TOP BAR ======= -->
+    <top>
+        <HBox spacing="20" alignment="CENTER_LEFT" style="-fx-padding: 15; -fx-background-color: #2C3E50;">
+            <Label text="CrowdFundPro Dashboard"
+                   style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;" />
+        </HBox>
+    </top>
+
+    <!-- ======= CENTER CONTENT ======= -->
     <center>
-        <ListView fx:id="campaignList" />
+        <VBox spacing="15" alignment="TOP_CENTER" style="-fx-padding: 20;">
+
+            <Label text="Available Campaigns"
+                   style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+
+            <ListView fx:id="campaignList"
+                      prefHeight="350"
+                      prefWidth="600"
+                      style="-fx-font-size: 14px;" />
+
+            <HBox spacing="20" alignment="CENTER">
+                <Button text="Contribute"
+                        onAction="#contribute"
+                        style="-fx-font-size: 15px; -fx-background-color: #27AE60; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 6;" />
+
+                <Button text="Refresh"
+                        onAction="#initialize"
+                        style="-fx-font-size: 15px; -fx-background-color: #2980B9; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 6;" />
+            </HBox>
+
+        </VBox>
     </center>
+
+    <!-- ======= BOTTOM FOOTER ======= -->
+    <bottom>
+        <HBox alignment="CENTER" style="-fx-padding: 10; -fx-background-color: #2C3E50;">
+            <Label text="© 2025 CrowdFundPro" style="-fx-text-fill: white;" />
+        </HBox>
+    </bottom>
 
 </BorderPane>
