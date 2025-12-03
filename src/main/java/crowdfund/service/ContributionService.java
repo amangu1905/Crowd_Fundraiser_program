@@ -9,11 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * ContributionService: business logic and orchestration for handling contributions.
- * - Validates input
- * - Loads campaign state
- * - Begins a JDBC transaction
- * - Inserts contribution and updates campaign amount atomically
+ * ContributionService orchestrates validation and atomic DB updates for contributions.
  */
 public class ContributionService {
 
@@ -21,36 +17,33 @@ public class ContributionService {
     private final ContributionDAO contributionDAO = new ContributionDAO();
 
     /**
-     * Process a contribution atomically.
+     * Process a contribution atomically: insert contribution row + update campaign amount.
      *
-     * @param campaignId campaign id
-     * @param userId     contributor id
-     * @param amount     amount to contribute (>0)
-     * @return true if committed successfully, false otherwise
+     * @param campaignId target campaign id
+     * @param userId     contributor user id
+     * @param amount     amount (>0)
+     * @return true if committed successfully
      */
     public boolean contribute(int campaignId, int userId, double amount) {
-        // Basic validation
-        if (amount <= 0) {
-            return false; // invalid amount
-        }
 
-        // Check campaign exists and optionally business rules (e.g., cannot exceed goal)
+        // 1. Basic validation
+        if (amount <= 0) return false;
+
+        // 2. Campaign existence
         Campaign campaign = campaignDAO.getCampaignById(campaignId);
-        if (campaign == null) {
-            return false; // campaign not found
-        }
+        if (campaign == null) return false;
 
-        // Example business rule: don't allow contribution that makes total negative (safeguard)
-        double projected = campaign.getCurrentAmount() + amount;
-        if (projected < 0) return false;
+        // 3. Example rule: Do not exceed goal by business decision (optional)
+        // double projected = campaign.getCurrentAmount() + amount;
+        // if (projected > campaign.getGoalAmount()) return false;
 
+        // 4. Transactional DB operations
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
             if (conn == null) return false;
             conn.setAutoCommit(false);
 
-            // 1) Insert contribution row
             int inserted = contributionDAO.insertContribution(conn, campaignId, userId, amount);
             if (inserted != 1) {
                 conn.rollback();
@@ -58,7 +51,6 @@ public class ContributionService {
                 return false;
             }
 
-            // 2) Update campaign amount
             int updated = campaignDAO.updateCurrentAmount(conn, campaignId, amount);
             if (updated != 1) {
                 conn.rollback();
@@ -66,11 +58,9 @@ public class ContributionService {
                 return false;
             }
 
-            // 3) Commit
             conn.commit();
             conn.setAutoCommit(true);
             return true;
-
         } catch (SQLException e) {
             e.printStackTrace();
             if (conn != null) {
