@@ -1,0 +1,133 @@
+🔌 JDBC Implementation & Best Practices (With Real Code Examples)
+
+The crowdfunding system uses JDBC (Java Database Connectivity) to interact securely and efficiently with the MySQL database.
+The project follows modern JDBC best practices, including:
+Centralized connection handling
+Prepared statements to prevent SQL injection
+Transaction management for atomic operations
+Try-with-resources for automatic cleanup
+DAO architecture for separation of concerns
+
+1. Centralized & Reusable DB Connection (DBConnect Class)
+All database connections are established through a single helper class, ensuring:
+Easy maintenance
+Reusability
+Avoiding duplicated code
+Cleaner DAO classes
+Example from DBConnect.java:
+public class DBConnect {
+
+    private static final String URL = "jdbc:mysql://localhost:3306/crowdfunddb";
+    private static final String USER = "root";
+    private static final String PASS = "yourpassword";
+
+    public static Connection getConnection() {
+        try {
+            return DriverManager.getConnection(URL, USER, PASS);
+        } catch (SQLException e) {
+            System.err.println("Database Connection Failed: " + e.getMessage());
+            return null;
+        }
+    }
+}
+
+2. Secure SQL Statements Using PreparedStatement
+Prepared statements ensure:
+Protection against SQL Injection
+Faster execution (precompiled SQL)
+Cleaner parameter binding
+Example from UserDAO.java:
+String sql = "INSERT INTO users(name, email, password, role) VALUES (?, ?, ?, ?)";
+
+try (Connection con = DBConnect.getConnection();
+     PreparedStatement ps = con.prepareStatement(sql)) {
+
+    ps.setString(1, user.getName());
+    ps.setString(2, user.getEmail());
+    ps.setString(3, user.getPassword());
+    ps.setString(4, user.getRole());
+
+    ps.executeUpdate();
+
+} catch (SQLException e) {
+    System.err.println("Error creating user: " + e.getMessage());
+}
+
+
+3. JDBC Transaction Management for Atomic Operations
+The most important part of the project is donation processing, which requires:
+Inserting a contribution
+Updating the campaign’s total amount
+Both must succeed together, otherwise the database becomes inconsistent.
+So we implemented manual transaction control:
+Example from ContributionDAO.java:
+public boolean processDonation(int campaignId, int userId, double amount) {
+    String insertSql = "INSERT INTO contributions(campaign_id, user_id, amount) VALUES (?, ?, ?)";
+    String updateSql = "UPDATE campaigns SET current_amount = current_amount + ? WHERE id = ?";
+
+    try (Connection con = DBConnect.getConnection()) {
+        con.setAutoCommit(false);  // Start transaction
+
+        try (PreparedStatement ps1 = con.prepareStatement(insertSql);
+             PreparedStatement ps2 = con.prepareStatement(updateSql)) {
+
+            ps1.setInt(1, campaignId);
+            ps1.setInt(2, userId);
+            ps1.setDouble(3, amount);
+            ps1.executeUpdate();
+
+            ps2.setDouble(1, amount);
+            ps2.setInt(2, campaignId);
+            ps2.executeUpdate();
+
+            con.commit();   // Commit only if both operations succeed
+            return true;
+
+        } catch (SQLException e) {
+            con.rollback(); // Undo changes if ANY SQL fails
+            System.err.println("Donation failed. Rolled back: " + e.getMessage());
+        }
+
+    } catch (SQLException e) {
+        System.err.println("Database error: " + e.getMessage());
+    }
+
+    return false;
+}
+
+
+4. Try-With-Resources for Automatic Cleanup
+Every DAO uses Java’s automatic resource management:
+try (Connection con = DBConnect.getConnection();
+     PreparedStatement ps = con.prepareStatement(sql)) {
+This ensures:
+No unclosed connections
+No leaked statements
+No risk of memory exhaustion
+Always safe even if an exception occurs
+
+5. Foreign Keys + JDBC Enforce Data Integrity
+The system uses MySQL foreign keys with CASCADE rules:
+FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
+ON DELETE CASCADE
+Together with JDBC, this ensures:
+No orphan contributions
+Safe deletion of campaigns
+No manual cleanup neede
+DAO logic becomes much cleaner because database integrity is enforced automatically.
+
+6. DAO (Data Access Object) Pattern for Clean Architecture
+Every entity has its own DAO file:
+UserDAO.java
+CampaignDAO.java
+ContributionDAO.java
+This provides:
+Separation of concerns
+Cleaner controllers
+Easy maintenance
+Reusable DB functions
+Very high code readability
+Example:
+public Campaign getCampaignById(int id) {
+    String sql = "SELECT * FROM campaigns WHERE id = ?";
+ontrollers never touch SQL — they only call DAO methods (MVC compliance).
