@@ -1,41 +1,69 @@
-// createCampaign method
-public boolean createCampaign(Campaign c) {
-    String sql = "INSERT INTO campaigns(title,description,goal_amount,current_amount,creator_id) VALUES(?,?,?,?,?)";
-    try (Connection con = DBUtil.getConnection();
-         PreparedStatement ps = con.prepareStatement(sql)) { // try-with-resources
-        ps.setString(1, c.getTitle());
-        ps.setString(2, c.getDescription());
-        ps.setDouble(3, c.getGoalAmount());
-        ps.setDouble(4, c.getCurrentAmount());
-        ps.setInt(5, c.getCreatorId());
+package crowdfund.dao;
 
-        return ps.executeUpdate() > 0;
-    } catch (SQLException e) {
-        // Use a logging framework instead of printStackTrace
-        System.err.println("Error creating campaign: " + e.getMessage()); // Replace with proper logging
+import crowdfund.model.Campaign;
+import crowdfund.util.DBUtil;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CampaignDAO {
+
+    public boolean createCampaign(Campaign c) {
+        try (Connection con = DBUtil.getConnection()) {
+            String sql = "INSERT INTO campaigns(title,description,goal_amount,current_amount,creator_id) VALUES(?,?,?,?,?)";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, c.getTitle());
+            ps.setString(2, c.getDescription());
+            ps.setDouble(3, c.getGoalAmount());
+            ps.setDouble(4, c.getCurrentAmount());
+            ps.setInt(5, c.getCreatorId());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); }
         return false;
     }
-}
 
-// getAllCampaigns method
-public List<Campaign> getAllCampaigns() {
-    List<Campaign> list = new ArrayList<>();
-    String sql = "SELECT * FROM campaigns";
-    try (Connection con = DBUtil.getConnection();
-         Statement st = con.createStatement();
-         ResultSet rs = st.executeQuery(sql)) { // try-with-resources
-        while (rs.next()) {
-            list.add(new Campaign(
+    public List<Campaign> getAllCampaigns() {
+        List<Campaign> list = new ArrayList<>();
+        try (Connection con = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM campaigns";
+            Statement st = con.createStatement();
+            ResultSet rs = st.executeQuery(sql);
+
+            while (rs.next()) {
+                list.add(new Campaign(
                     rs.getInt("id"),
                     rs.getString("title"),
                     rs.getString("description"),
                     rs.getDouble("goal_amount"),
                     rs.getDouble("current_amount"),
                     rs.getInt("creator_id")
-            ));
-        }
-    } catch (SQLException e) {
-        System.err.println("Error getting all campaigns: " + e.getMessage()); // Replace with proper logging
+                ));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
-    return list;
+
+    /**
+     * New: fetch campaign by id (used by service layer for validation/calculation)
+     */
+    public Campaign getCampaignById(int campaignId) {
+        try (Connection con = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM campaigns WHERE id = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, campaignId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Campaign(
+                    rs.getInt("id"),
+                    rs.getString("title"),
+                    rs.getString("description"),
+                    rs.getDouble("goal_amount"),
+                    rs.getDouble("current_amount"),
+                    rs.getInt("creator_id")
+                );
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
 }
